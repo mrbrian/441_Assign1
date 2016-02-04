@@ -155,13 +155,17 @@ public class SelectServer {
 	                            line = cBuffer.toString();
 	                            System.out.print("TCP Client: " + line);
 
-	                            if (line.equals("list"))
+	                            if (line.equals("list\n"))
 	                            {   
 	                            	String outputStr = getFileList(".");
-	                            	cBuffer.put(outputStr);
-	                            	encoder.encode(cBuffer, inBuffer, false);
-	                            	inBuffer.flip();
-		                            bytesSent = cchannel.write(inBuffer); 
+	                            	CharBuffer newcb = CharBuffer.allocate(outputStr.length());
+	                            	ByteBuffer outBuf = ByteBuffer.allocate(1000);
+
+	                            	newcb.put(outputStr);
+	                            	newcb.rewind();
+	                            	encoder.encode(newcb, outBuf, false);
+	                            	outBuf.flip();
+		                            bytesSent = cchannel.write(outBuf); 
 		                            if (false)
 		                            {
 		                                System.out.println("write() error, or connection closed");
@@ -227,8 +231,9 @@ public class SelectServer {
 		    for (int i = 0; i < files.length; i++) 
 			{
 				if (files[i].isFile()) 
-					result += files[i].getName() + '\n';
+					result += files[i].getName() + ' ';
 		    }
+			result += '\n';
 		}
         catch (IOException e) {
             System.out.println(e);
@@ -236,21 +241,6 @@ public class SelectServer {
 		return result;
     }    
     
-    /*
-	static void execute(String c) 
-	{
-		Process p;
-		try 
-		{
-			p = Runtime.getRuntime().exec(c);
-			p.waitFor();
-		} 
-		catch (Exception e) 
-		{
-            System.out.println(e);
-		}
-	}
-	*/
     static void closeChannel(SelectableChannel channel)
     {
     	try
