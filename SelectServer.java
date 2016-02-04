@@ -157,36 +157,42 @@ public class SelectServer {
 
 	                            if (line.equals("list"))
 	                            {
-	                            	System.out.println("");
-		                            String current = new File( "." ).getCanonicalPath();
-		                            File directory = new File(current);
-		                            File[] files = directory.listFiles();
 
-	                            	for (int i = 0; i < files.length; i++) 
-	                            	{
-                            			if (files[i].isFile()) 
-                            			{
-                            				System.out.println(files[i].getName());
-                            			} 
-	                                }
+		                            ByteBuffer outBuf = ByteBuffer.allocate(1000);
+		                            CharBuffer newcb = CharBuffer.allocate(1000);
+	                            	newcb.put(outputStr);
+	                            	newcb.rewind();
+	                            	encoder.encode(newcb, outBuf, false);
+	                            	outBuf.flip();
+		                            bytesSent = cchannel.write(outBuf); 
+		                            if (bytesSent != outputStr.length())
+		                            {
+		                                System.out.println("write() error, or connection closed");
+		                                key.cancel();  // deregister the socket
+		                                continue;
+		                            }
 	                            }
-
-	                            if (line.startsWith("get"))
+	                            else if (line.startsWith("get"))
 	                            {
+	                            	String[] split = line.split(" ");
 	                            	
 	                            }
-	                            
-	                            // Echo the message back
-	                            inBuffer.flip();
-	                            bytesSent = cchannel.write(inBuffer); 
-	                            if (bytesSent != bytesRecv)
+	                            else if (line.equals("terminate\n"))
 	                            {
-	                                System.out.println("write() error, or connection closed");
-	                                key.cancel();  // deregister the socket
-	                                continue;
+		                                terminated = true;
 	                            }
-	                            if (line.equals("terminate\n"))
-	                                terminated = true;
+	                            else
+	                            {
+		                            // Echo the message back
+		                            inBuffer.flip();
+		                            bytesSent = cchannel.write(inBuffer); 
+		                            if (bytesSent != bytesRecv)
+		                            {
+		                                System.out.println("write() error, or connection closed");
+		                                key.cancel();  // deregister the socket
+		                                continue;
+		                            }
+	                            }
                         	}
                     	}
                     }
@@ -214,20 +220,6 @@ public class SelectServer {
             }
         }
     }
-    
-	void execute(String c) 
-	{
-		Process p;
-		try 
-		{
-			p = Runtime.getRuntime().exec(c);
-			p.waitFor();
-		} 
-		catch (Exception e) 
-		{
-            System.out.println(e);
-		}
-	}
 	
     static void closeChannel(SelectableChannel channel)
     {
