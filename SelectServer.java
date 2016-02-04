@@ -90,7 +90,7 @@ public class SelectServer {
                     else 
                     {
                     	SelectableChannel sc = key.channel();
-                    	if (sc instanceof DatagramChannel)
+                    	if (sc instanceof DatagramChannel)		// is it UDP?
                     	{
                     		DatagramChannel dc = (DatagramChannel)sc;
 	                        if (key.isReadable())
@@ -129,7 +129,7 @@ public class SelectServer {
 	                                terminated = true;
 	                         }
                     	}
-                    	else
+                    	else		// it's not UDP, must be TCP then
                     	{
 	                        SocketChannel cchannel = (SocketChannel)sc;
 	                        if (key.isReadable())
@@ -155,16 +155,18 @@ public class SelectServer {
 	                            line = cBuffer.toString();
 	                            System.out.print("TCP Client: " + line);
 
-	                            if (line.equals("list"))
-	                            {
+	                            if (line.equals("list\n"))
+	                            {   
+	                            	String outputStr = getFileList(".");
+	                            	CharBuffer newcb = CharBuffer.allocate(outputStr.length());
+	                            	ByteBuffer outBuf = ByteBuffer.allocate(1000);
 
-		                            ByteBuffer outBuf = ByteBuffer.allocate(1000);
-		                            CharBuffer newcb = CharBuffer.allocate(1000);
 	                            	newcb.put(outputStr);
 	                            	newcb.rewind();
 	                            	encoder.encode(newcb, outBuf, false);
 	                            	outBuf.flip();
 		                            bytesSent = cchannel.write(outBuf); 
+
 		                            if (bytesSent != outputStr.length())
 		                            {
 		                                System.out.println("write() error, or connection closed");
@@ -192,6 +194,8 @@ public class SelectServer {
 		                                key.cancel();  // deregister the socket
 		                                continue;
 		                            }
+		                            if (line.equals("terminate\n"))
+		                                terminated = true;
 	                            }
                         	}
                     	}
@@ -220,7 +224,29 @@ public class SelectServer {
             }
         }
     }
-	
+    
+    static String getFileList(String dir)
+    {
+	    String result = "";
+		try
+		{
+		    String current = new File(dir).getCanonicalPath();
+		    File directory = new File(current);
+		    File[] files = directory.listFiles();
+			
+		    for (int i = 0; i < files.length; i++) 
+			{
+				if (files[i].isFile()) 
+					result += files[i].getName() + ' ';
+		    }
+			result += '\n';
+		}
+        catch (IOException e) {
+            System.out.println(e);
+        }
+		return result;
+    }    
+    
     static void closeChannel(SelectableChannel channel)
     {
     	try
