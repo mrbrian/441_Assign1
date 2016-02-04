@@ -125,7 +125,7 @@ public class SelectServer {
 	                                continue;
 	                            }
 	                            
-	                            if (line.equals("terminate\n"))
+	                            if (line.equals("terminate"))
 	                                terminated = true;
 	                         }
                     	}
@@ -199,14 +199,15 @@ public class SelectServer {
     {
     	try
     	{
-	     	ServerSocketChannel tcpChannel = (ServerSocketChannel)channel;
-	        if (tcpChannel != null)
+    		if (channel instanceof ServerSocketChannel)
+    		{
+    			ServerSocketChannel tcpChannel = (ServerSocketChannel)channel;
 	        	tcpChannel.socket().close();
-	        else
-	        {
+    		}
+    		else if (channel instanceof DatagramChannel)
+    		{
 	        	DatagramChannel udpChannel = (DatagramChannel)channel;
-	            if (udpChannel != null)
-	            	udpChannel.socket().close();
+            	udpChannel.socket().close();
 	        }
     	}
         catch (IOException e) {
