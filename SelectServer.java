@@ -90,7 +90,7 @@ public class SelectServer {
                     else 
                     {
                     	SelectableChannel sc = key.channel();
-                    	if (sc instanceof DatagramChannel)
+                    	if (sc instanceof DatagramChannel)		// is it UDP?
                     	{
                     		DatagramChannel dc = (DatagramChannel)sc;
 	                        if (key.isReadable())
@@ -129,7 +129,7 @@ public class SelectServer {
 	                                terminated = true;
 	                         }
                     	}
-                    	else
+                    	else		// it's not UDP, must be TCP then
                     	{
 	                        SocketChannel cchannel = (SocketChannel)sc;
 	                        if (key.isReadable())
@@ -156,37 +156,37 @@ public class SelectServer {
 	                            System.out.print("TCP Client: " + line);
 
 	                            if (line.equals("list"))
-	                            {
-	                            	System.out.println("");
-		                            String current = new File( "." ).getCanonicalPath();
-		                            File directory = new File(current);
-		                            File[] files = directory.listFiles();
-
-	                            	for (int i = 0; i < files.length; i++) 
-	                            	{
-                            			if (files[i].isFile()) 
-                            			{
-                            				System.out.println(files[i].getName());
-                            			} 
-	                                }
+	                            {   
+	                            	String outputStr = getFileList(".");
+	                            	cBuffer.put(outputStr);
+	                            	encoder.encode(cBuffer, inBuffer, false);
+	                            	inBuffer.flip();
+		                            bytesSent = cchannel.write(inBuffer); 
+		                            if (false)
+		                            {
+		                                System.out.println("write() error, or connection closed");
+		                                key.cancel();  // deregister the socket
+		                                continue;
+		                            }
 	                            }
-
-	                            if (line.startsWith("get"))
+	                            else if (line.startsWith("get"))
 	                            {
 	                            	
 	                            }
-	                            
-	                            // Echo the message back
-	                            inBuffer.flip();
-	                            bytesSent = cchannel.write(inBuffer); 
-	                            if (bytesSent != bytesRecv)
+	                            else
 	                            {
-	                                System.out.println("write() error, or connection closed");
-	                                key.cancel();  // deregister the socket
-	                                continue;
+		                            // Echo the message back
+		                            inBuffer.flip();
+		                            bytesSent = cchannel.write(inBuffer); 
+		                            if (bytesSent != bytesRecv)
+		                            {
+		                                System.out.println("write() error, or connection closed");
+		                                key.cancel();  // deregister the socket
+		                                continue;
+		                            }
+		                            if (line.equals("terminate\n"))
+		                                terminated = true;
 	                            }
-	                            if (line.equals("terminate\n"))
-	                                terminated = true;
                         	}
                     	}
                     }
@@ -215,7 +215,29 @@ public class SelectServer {
         }
     }
     
-	void execute(String c) 
+    static String getFileList(String dir)
+    {
+	    String result = "";
+		try
+		{
+		    String current = new File(dir).getCanonicalPath();
+		    File directory = new File(current);
+		    File[] files = directory.listFiles();
+			
+		    for (int i = 0; i < files.length; i++) 
+			{
+				if (files[i].isFile()) 
+					result += files[i].getName() + '\n';
+		    }
+		}
+        catch (IOException e) {
+            System.out.println(e);
+        }
+		return result;
+    }    
+    
+    /*
+	static void execute(String c) 
 	{
 		Process p;
 		try 
@@ -228,7 +250,7 @@ public class SelectServer {
             System.out.println(e);
 		}
 	}
-	
+	*/
     static void closeChannel(SelectableChannel channel)
     {
     	try
