@@ -124,6 +124,9 @@ public class SelectServer {
 	                                key.cancel();  // deregister the socket
 	                                continue;
 	                            }
+	                            
+	                            if (line.equals("terminate"))
+	                                terminated = true;
 	                         }
                     	}
                     	else
