@@ -105,9 +105,7 @@ public class SelectServer {
                     	{
 	                        SocketChannel cchannel = (SocketChannel)sc;
 	                        if (key.isReadable())
-	                        {
-	                            Socket socket = cchannel.socket();
-	                        
+	                        {	                        
 	                            // Open input and output streams
 	                            inBuffer = ByteBuffer.allocateDirect(BUFFERSIZE);
 	                            cBuffer = CharBuffer.allocate(BUFFERSIZE);
@@ -161,7 +159,7 @@ public class SelectServer {
 	                            {
 		                            String filename = strSplit[1];
 		                            filename = filename.replaceAll("\\s+", "");			// trim whitespace
-		                            System.out.print(String.format("Open file: %s\n", filename));
+		                            System.out.print("Open file: " + filename + "\n");
 
 		                            byte[] data = getFile(filename);
 		                            if (data == null)
@@ -188,7 +186,7 @@ public class SelectServer {
 	                            else
 	                            {
 	                            	line = line.replaceAll("\\s+", "");			// trim whitespace
-	                            	String outStr = String.format("Unknown command: %s\n", line);
+	                            	String outStr = "Unknown command: " + line + "\n";
 	                            	int outLen = outStr.length();
 	                            	CharBuffer newcb = CharBuffer.allocate(outLen);
 	                            	ByteBuffer outBuf = ByteBuffer.allocate(outLen);
@@ -247,6 +245,7 @@ public class SelectServer {
 		    result = new byte[size];
 
 		    input.read(result);
+		    input.close();
 	    }
 	    catch(IOException e) {
             System.out.println("open() failed");
@@ -321,7 +320,7 @@ public class SelectServer {
             cBuffer.flip();
             String line = cBuffer.toString();
             int bytesRecv = line.length();
-            System.out.print(String.format("UDP Client: %s\n", line));
+            System.out.print("UDP Client: " + line + "\n");
    	                          
             // Echo the message back
             inBuffer.flip();
