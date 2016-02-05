@@ -20,57 +20,65 @@ class TCPClient {
             System.out.println("Usage: TCPClient <Server IP> <Server Port>");
             System.exit(1);
         }
-
-        // Initialize a client socket connection to the server
-        Socket clientSocket = new Socket(args[0], Integer.parseInt(args[1])); 
-
-        // Initialize input and an output stream for the connection(s)
-        DataOutputStream outBuffer = new DataOutputStream(clientSocket.getOutputStream()); 
-        BufferedReader inBuffer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));         
-        DataInputStream inData = new DataInputStream(clientSocket.getInputStream());
-
-        // Initialize user input stream
-        String line; 
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
-
-        // Get user input and send to the server
-        // Display the echo meesage from the server
-        System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
-        line = inFromUser.readLine(); 
         
-        while (!line.equals("logout"))
-        {           
-            String[] split = line.split(" ");
+        try
+        {
+            // Initialize a client socket connection to the server
+            Socket clientSocket = new Socket(args[0], Integer.parseInt(args[1])); 
             
-            // Send to the server
-            outBuffer.writeBytes(line + "\n"); 
+	        // Initialize input and an output stream for the connection(s)
+	        DataOutputStream outBuffer = new DataOutputStream(clientSocket.getOutputStream()); 
+	        BufferedReader inBuffer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));         
+	        DataInputStream inData = new DataInputStream(clientSocket.getInputStream());
+	
+	        // Initialize user input stream
+	        String line; 
+	        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 
-			// List command detection
-        	if (split[0].equals("list"))
-        	{
-        		receiveFileList(inData); //receive file list
-        	}
-			//Get command detection
-        	else if (split[0].equals("get"))
-        	{
-        		String filename = split[1];	//parse filename from input
-        		int port = clientSocket.getLocalPort(); //get client port
-        		String destfile = filename + "-" + port; //concatenate new filename
-        		receiveFile(inData, inBuffer, destfile); //getFile    			
-        	}
-        	else
-        	{
-	            // Getting response from the server
-	            line = inBuffer.readLine();
-	            System.out.println("Server: " + line);
-        	}   
-        	
-            System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
-            line = inFromUser.readLine(); 
+	        // Get user input and send to the server
+	        // Display the echo meesage from the server
+	        System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
+	        line = inFromUser.readLine(); 
+        
+	        while (!line.equals("logout"))
+	        {           
+	            String[] split = line.split(" ");
+	            split[0] = split[0].replaceAll("\\s+", "");		// trim whitespace from command
+	            
+	            // Send to the server
+	            outBuffer.writeBytes(line + "\n"); 
+	
+				// List command detection
+	        	if (split[0].equals("list"))
+	        	{
+	        		receiveFileList(inData); //receive file list
+	        	}
+				//Get command detection
+	        	else if (split[0].equals("get"))
+	        	{
+	        		String filename = split.length > 1 ? split[1] : "noname";	//parse filename from user command.. use "noname" if none is given
+	        		int port = clientSocket.getLocalPort(); //get client port
+	        		String destfile = filename + "-" + port; //concatenate new filename
+	        		receiveFile(inData, inBuffer, destfile); //getFile    			
+	        	}
+	        	else
+	        	{
+		            // Getting response from the server
+		            line = inBuffer.readLine();
+		            System.out.println("Server: " + line);
+	        	}   
+	        	
+	            System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
+	            line = inFromUser.readLine(); 
+	        }
+	        
+	        // Close the socket
+	        clientSocket.close();    
         }
-
-        // Close the socket
-        clientSocket.close();           
+        catch(SocketException e)		// nicely catch error if connection is closed		
+        {
+        	System.out.println(e);
+        }       
     } 
     
 	// helper function to 

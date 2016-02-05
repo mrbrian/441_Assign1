@@ -126,6 +126,7 @@ public class SelectServer {
 	                            System.out.print("TCP Client: " + line);
 
                             	String[] strSplit = line.split(" ");	// split up commands
+                            	strSplit[0] = strSplit[0].replaceAll("\\s+", "");	// trim whitespace
                             	
 	                            if (line.equals("list\n"))
 	                            {   
@@ -148,7 +149,7 @@ public class SelectServer {
 	                            }
 	                            else if (strSplit[0].equals("get"))
 	                            {
-		                            String filename = strSplit[1];
+		                            String filename = strSplit.length > 1 ? strSplit[1] : "<none>";		// check if a filename was passed	
 		                            filename = filename.replaceAll("\\s+", "");			// trim whitespace
 		                            System.out.print("Open file: " + filename + "\n");
 
