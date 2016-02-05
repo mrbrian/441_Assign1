@@ -142,6 +142,8 @@ public class SelectServer {
 	                            cBuffer = CharBuffer.allocate(BUFFERSIZE);
 	                             
 	                            // Read from socket
+	                            Thread.sleep(100);
+	                            
 	                            bytesRecv = cchannel.read(inBuffer);
 	                            if (bytesRecv <= 0)
 	                            {
@@ -182,13 +184,20 @@ public class SelectServer {
 	                            else if (strSplit[0].equals("get"))
 	                            {
 		                            String filename = strSplit[1];
+		                            filename = filename.replaceAll("\\s+", "");
 		                            System.out.print("Open file: " + filename);
 
 		                            byte[] data = getFile(filename);
-
-		                            ByteBuffer outBuf = ByteBuffer.allocate(data.length);
-		                            outBuf.flip();
-		                            cchannel.write(outBuf);
+		                            if (data == null)
+		                            {
+		                                System.out.println(filename + " not found.");		                            
+		                            }
+		                            else
+		                            {
+			                            ByteBuffer outBuf = ByteBuffer.allocate(data.length);
+			                            outBuf.flip();
+			                            cchannel.write(outBuf);
+		                            }
 	                            }
 	                            else if (line.equals("terminate\n"))
 	                            {

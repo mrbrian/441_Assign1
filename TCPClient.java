@@ -46,19 +46,37 @@ class TCPClient {
         	if (line.equals("list"))
         	{
         		boolean gotList = false;
-				// 	read line loop.  until end...
+				
+        		// 	read line loop.  until end...
         		while (!gotList && !inBuffer.ready())
         		{        			
         		}
+        		
     			while (inBuffer.ready())
     			{
         			line = inBuffer.readLine();
         			System.out.println(line);
         		}
         	}
-        	else if (line.equals("get"))
+        	else if (line.startsWith("get"))
         	{
-        		// 	
+    			int size = 0;
+        		boolean gotList = false;
+    			String outFile = "buh";
+
+        		while (!gotList && !inBuffer.ready())
+        		{        	
+        			System.out.println("wait");		
+        		}
+
+        	//	ArrayList<byte> data = new ArrayList<byte>();
+    			while (inBuffer.ready())
+    			{
+        			//b = inBuffer.read();
+        			System.out.println(size++);
+        		}
+    			
+    			System.out.println(String.format("File saved in %s (%d bytes)", outFile, size));
         	}
         	else
         	{
