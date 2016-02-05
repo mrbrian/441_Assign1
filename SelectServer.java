@@ -12,7 +12,7 @@ import java.nio.charset.*;
 import java.util.*;
 
 public class SelectServer {
-    public static int BUFFERSIZE = 32;
+    public static int BUFFERSIZE = 256;
     public static void main(String args[]) throws Exception 
     {
         if (args.length != 1)
@@ -63,7 +63,9 @@ public class SelectServer {
                     System.out.println("select() failed");
                     System.exit(1);
                 }
-                
+				
+				Thread.sleep(500);
+				
                 // Get set of ready sockets
                 Set readyKeys = selector.selectedKeys();
                 Iterator readyItor = readyKeys.iterator();
@@ -135,7 +137,7 @@ public class SelectServer {
 	                        if (key.isReadable())
 	                        {
 	                            Socket socket = cchannel.socket();
-	                        
+
 	                            // Open input and output streams
 	                            inBuffer = ByteBuffer.allocateDirect(BUFFERSIZE);
 	                            cBuffer = CharBuffer.allocate(BUFFERSIZE);
@@ -153,7 +155,9 @@ public class SelectServer {
 	                            decoder.decode(inBuffer, cBuffer, false);
 	                            cBuffer.flip();
 	                            line = cBuffer.toString();
+	                            
 	                            System.out.print("TCP Client: " + line);
+								
 
 	                            if (line.equals("list"))
 	                            {   
@@ -171,21 +175,30 @@ public class SelectServer {
 	                            }
 	                            else if (line.startsWith("get"))
 	                            {
-	                            	
+	                            	 	 
 	                            }
 	                            else
 	                            {
+									System.out.println("In ELSE");
+									
 		                            // Echo the message back
 		                            inBuffer.flip();
-		                            bytesSent = cchannel.write(inBuffer); 
+		                            bytesSent = cchannel.write(inBuffer);
+									System.out.println(bytesSent);
+									
 		                            if (bytesSent != bytesRecv)
 		                            {
 		                                System.out.println("write() error, or connection closed");
 		                                key.cancel();  // deregister the socket
 		                                continue;
 		                            }
-		                            if (line.equals("terminate\n"))
+		                            if (line.equals("terminate\n")){
+										System.out.println("in termiante");
 		                                terminated = true;
+									}
+									
+									inBuffer.clear();
+
 	                            }
                         	}
                     	}
