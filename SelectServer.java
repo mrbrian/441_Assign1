@@ -92,42 +92,14 @@ public class SelectServer {
                     	SelectableChannel sc = key.channel();
                     	if (sc instanceof DatagramChannel)		// is it UDP?
                     	{
-                    		DatagramChannel dc = (DatagramChannel)sc;
-	                        if (key.isReadable())
-	                        {
-	                            // Open input and output streams
-	                            inBuffer = ByteBuffer.allocateDirect(BUFFERSIZE);
-	                            cBuffer = CharBuffer.allocate(BUFFERSIZE);
-	                         
-	                            // Read from socket
-	                            SocketAddress addr = dc.receive(inBuffer);
-	                            if (addr == null)
-	                            {
-	                                System.out.println("read() error, or connection closed");
-	                                key.cancel();  // deregister the socket
-	                                continue;
-	                            }
-	                             
-	                            inBuffer.flip();      // make buffer available  
-	                            decoder.decode(inBuffer, cBuffer, false);
-	                            cBuffer.flip();
-	                            line = cBuffer.toString();
-	                            bytesRecv = line.length();
-	                            System.out.print("UDP Client: " + line);
-	                   	                          
-	                            // Echo the message back
-	                            inBuffer.flip();
-	                            bytesSent = dc.send(inBuffer, addr); 
-	                            if (bytesSent != bytesRecv)
-	                            {
-	                                System.out.println("write() error, or connection closed");
-	                                key.cancel();  // deregister the socket
-	                                continue;
-	                            }
-	                            
-	                            if (line.equals("terminate"))
-	                                terminated = true;
-	                         }
+                        	DatagramChannel dc = (DatagramChannel)sc;
+                    		line = do_UDP(dc, key, inBuffer, cBuffer, decoder);		// process UDP
+                    		
+							if (line == null)
+								continue;
+							
+                            if (line.equals("terminate"))
+                                terminated = true;
                     	}
                     	else		// it's not UDP, must be TCP then
                     	{
@@ -189,7 +161,7 @@ public class SelectServer {
 	                            {
 		                            String filename = strSplit[1];
 		                            filename = filename.replaceAll("\\s+", "");
-		                            System.out.print("Open file: " + filename);
+		                            System.out.print(String.format("Open file: %s\n", filename));
 
 		                            byte[] data = getFile(filename);
 		                            if (data == null)
@@ -262,7 +234,6 @@ public class SelectServer {
     	try
 	    {	
   		    File f = new File(filename);
-  
   		    FileInputStream input = new FileInputStream(f);
 
 	    	int size = (int)f.length();
@@ -271,7 +242,7 @@ public class SelectServer {
 		    input.read(result);
 	    }
 	    catch(IOException e) {
-            System.out.println(e);
+            System.out.println("open() failed");
         }
 	    return result;
     }
@@ -290,7 +261,6 @@ public class SelectServer {
 				if (files[i].isFile()) 
 					result += files[i].getName() + '\n';
 		    }
-			result += '\n';
 		}
         catch (IOException e) {
             System.out.println(e);
@@ -317,4 +287,47 @@ public class SelectServer {
             System.out.println(e);
     	}
     }
+    
+    static String do_UDP(DatagramChannel dc, 
+			    		SelectionKey key, 
+			    		ByteBuffer inBuffer, 
+			    		CharBuffer cBuffer, 
+			    		CharsetDecoder decoder) throws IOException
+    {
+        if (key.isReadable())
+        {
+            // Open input and output streams
+            inBuffer = ByteBuffer.allocateDirect(BUFFERSIZE);
+            cBuffer = CharBuffer.allocate(BUFFERSIZE);
+         
+            // Read from socket
+            SocketAddress addr = dc.receive(inBuffer);
+            if (addr == null)
+            {
+                System.out.println("read() error, or connection closed");
+                key.cancel();  // deregister the socket
+                return null;
+            }
+             
+            inBuffer.flip();      // make buffer available  
+            decoder.decode(inBuffer, cBuffer, false);
+            cBuffer.flip();
+            String line = cBuffer.toString();
+            int bytesRecv = line.length();
+            System.out.print(String.format("UDP Client: %s\n", line));
+   	                          
+            // Echo the message back
+            inBuffer.flip();
+            int bytesSent = dc.send(inBuffer, addr); 
+            if (bytesSent != bytesRecv)
+            {
+                System.out.println("write() error, or connection closed");
+                key.cancel();  // deregister the socket
+                return null;
+            }
+            return line;
+         }
+        return null;
+    }
+    
 }

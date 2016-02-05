@@ -25,34 +25,28 @@ class TCPClient {
         Socket clientSocket = new Socket(args[0], Integer.parseInt(args[1])); 
 
         // Initialize input and an output stream for the connection(s)
-        DataOutputStream outBuffer = 
-          new DataOutputStream(clientSocket.getOutputStream()); 
-        BufferedReader inBuffer = 
-          new BufferedReader(new
-          InputStreamReader(clientSocket.getInputStream())); 
-        
-        DataInputStream dataIn = new DataInputStream(clientSocket.getInputStream());
+        DataOutputStream outBuffer = new DataOutputStream(clientSocket.getOutputStream()); 
+        BufferedReader inBuffer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));         
+        DataInputStream inData = new DataInputStream(clientSocket.getInputStream());
 
         // Initialize user input stream
         String line; 
-        BufferedReader inFromUser = 
-        new BufferedReader(new InputStreamReader(System.in)); 
+        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in)); 
 
         // Get user input and send to the server
         // Display the echo meesage from the server
         System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
         line = inFromUser.readLine(); 
+        
         while (!line.equals("logout"))
         {           
             String[] split = line.split(" ");
             
-			if (!split[0].equals("get") && 
-				!line.equals("list") && 
-				!line.equals("terminate") &&
-				!line.equals("logout"))
+			if (!split[0].equals("get") && !line.equals("list") && 
+				!line.equals("terminate") && !line.equals("logout"))
 			{
 						
-				System.out.println("Incorrect command: " + line);
+				System.out.println("Unknown command: " + line);
 			}
 			else
 			{
@@ -62,13 +56,11 @@ class TCPClient {
 
         	if (split[0].equals("list"))
         	{
-        		receiveFileList(dataIn);
+        		receiveFileList(inData);
         	}
         	else if (split[0].equals("get"))
         	{
-        		receiveFile(dataIn);    			
-    			
-    			//System.out.println(String.format("File saved in %s (%d bytes)", outFile, size));
+        		receiveFile(inData);    			
         	}
         	else
         	{
@@ -116,8 +108,6 @@ class TCPClient {
     
     static void receiveFileList(DataInputStream inBuffer)
     {
-	    boolean gotList = false;
-		
 	    int bytesRead = 0;
 		try
 		{
@@ -127,7 +117,7 @@ class TCPClient {
 			bytesRead = inBuffer.read(data, 0, data.length);
 			if (bytesRead != filesize)
 			{
-				System.out.println("file list receive error");
+				System.out.println(String.format("receiveFileList: expected %d bytes, read %d bytes", filesize, bytesRead));
 				return;
 			}
 			String text = new String(data, "UTF-8");
