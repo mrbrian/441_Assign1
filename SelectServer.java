@@ -9,6 +9,7 @@ import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.nio.charset.*;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class SelectServer {
@@ -155,11 +156,15 @@ public class SelectServer {
 	                            line = cBuffer.toString();
 	                            System.out.print("TCP Client: " + line);
 
+                            	String[] strSplit = line.split(" ");
+                            	
 	                            if (line.equals("list\n"))
 	                            {   
 	                            	String outputStr = getFileList(".");
-	                            	CharBuffer newcb = CharBuffer.allocate(outputStr.length());
-	                            	ByteBuffer outBuf = ByteBuffer.allocate(1000);
+	                            	int strLen = outputStr.length();
+	                            	
+	                            	CharBuffer newcb = CharBuffer.allocate(strLen);
+	                            	ByteBuffer outBuf = ByteBuffer.allocate(strLen);
 
 	                            	newcb.put(outputStr);
 	                            	newcb.rewind();
@@ -174,14 +179,20 @@ public class SelectServer {
 		                                continue;
 		                            }
 	                            }
-	                            else if (line.startsWith("get"))
+	                            else if (strSplit[0].equals("get"))
 	                            {
-	                            	String[] split = line.split(" ");
-	                            	
+		                            String filename = strSplit[1];
+		                            System.out.print("Open file: " + filename);
+
+		                            byte[] data = getFile(filename);
+
+		                            ByteBuffer outBuf = ByteBuffer.allocate(data.length);
+		                            outBuf.flip();
+		                            cchannel.write(outBuf);
 	                            }
 	                            else if (line.equals("terminate\n"))
 	                            {
-		                                terminated = true;
+	                                terminated = true;
 	                            }
 	                            else
 	                            {
@@ -225,6 +236,27 @@ public class SelectServer {
         }
     }
     
+    static byte[] getFile(String filename)
+    {
+    	byte[] result = null;
+	    
+    	try
+	    {	
+  		    File f = new File(filename);
+  
+  		    FileInputStream input = new FileInputStream(f);
+
+	    	int size = (int)f.length();
+		    result = new byte[size];
+
+		    input.read(result);
+	    }
+	    catch(IOException e) {
+            System.out.println(e);
+        }
+	    return result;
+    }
+    
     static String getFileList(String dir)
     {
 	    String result = "";
@@ -237,7 +269,7 @@ public class SelectServer {
 		    for (int i = 0; i < files.length; i++) 
 			{
 				if (files[i].isFile()) 
-					result += files[i].getName() + ' ';
+					result += files[i].getName() + '\n';
 		    }
 			result += '\n';
 		}

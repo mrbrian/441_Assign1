@@ -41,11 +41,24 @@ class TCPClient {
         while (!line.equals("logout"))
         {
             // Send to the server
-            outBuffer.writeBytes(line); 
+            outBuffer.writeBytes(line + '\n'); 
 
         	if (line.equals("list"))
         	{
-        		
+        		boolean gotList = false;
+				// 	read line loop.  until end...
+        		while (!gotList && !inBuffer.ready())
+        		{        			
+        		}
+    			while (inBuffer.ready())
+    			{
+        			line = inBuffer.readLine();
+        			System.out.println(line);
+        		}
+        	}
+        	else if (line.equals("get"))
+        	{
+        		// 	
         	}
         	else
         	{
