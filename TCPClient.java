@@ -6,8 +6,10 @@
  */
 
 
+import java.awt.image.DataBuffer;
 import java.io.*; 
-import java.net.*; 
+import java.net.*;
+import java.nio.CharBuffer; 
 
 class TCPClient { 
 
@@ -28,6 +30,8 @@ class TCPClient {
         BufferedReader inBuffer = 
           new BufferedReader(new
           InputStreamReader(clientSocket.getInputStream())); 
+        
+        DataInputStream dataIn = new DataInputStream(clientSocket.getInputStream());
 
         // Initialize user input stream
         String line; 
@@ -39,55 +43,32 @@ class TCPClient {
         System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
         line = inFromUser.readLine(); 
         while (!line.equals("logout"))
-        {
-            // Send to the server
-            outBuffer.writeBytes(line + "\n"); 
+        {           
+            String[] split = line.split(" ");
             
-            // Getting response from the server
-            line = inBuffer.readLine();
-            
-			if(!line.equals("get") || !line.equals("list") || !line.equals("terminate") ||
-					!line.equals("logout")){
+			if (!split[0].equals("get") && 
+				!line.equals("list") && 
+				!line.equals("terminate") &&
+				!line.equals("logout"))
+			{
 						
 				System.out.println("Incorrect command: " + line);
-			}else{
-				System.out.println("Server: " + line);
+			}
+			else
+			{
+	            // Send to the server
+	            outBuffer.writeBytes(line + "\n"); 
 			}
 
-        	if (line.equals("list"))
+        	if (split[0].equals("list"))
         	{
-        		boolean gotList = false;
-				
-        		// 	read line loop.  until end...
-        		while (!gotList && !inBuffer.ready())
-        		{        			
-        		}
-        		
-    			while (inBuffer.ready())
-    			{
-        			line = inBuffer.readLine();
-        			System.out.println(line);
-        		}
+        		receiveFileList(dataIn);
         	}
-        	else if (line.startsWith("get"))
+        	else if (split[0].equals("get"))
         	{
-    			int size = 0;
-        		boolean gotList = false;
-    			String outFile = "buh";
-
-        		while (!gotList && !inBuffer.ready())
-        		{        	
-        			System.out.println("wait");		
-        		}
-
-        	//	ArrayList<byte> data = new ArrayList<byte>();
-    			while (inBuffer.ready())
-    			{
-        			//b = inBuffer.read();
-        			System.out.println(size++);
-        		}
+        		receiveFile(dataIn);    			
     			
-    			System.out.println(String.format("File saved in %s (%d bytes)", outFile, size));
+    			//System.out.println(String.format("File saved in %s (%d bytes)", outFile, size));
         	}
         	else
         	{
@@ -103,4 +84,59 @@ class TCPClient {
         // Close the socket
         clientSocket.close();           
     } 
+    
+    static void receiveFile(DataInputStream inBuffer)
+    {
+		int bytesRead = 0;
+		String outFile = "downloadedfile";
+		try
+		{
+			long filesize = inBuffer.readLong();
+		
+			byte[] data = new byte[(int)filesize];
+			File content = new File(outFile);
+			
+			FileOutputStream fos = new FileOutputStream(content);
+	        BufferedOutputStream bos = new BufferedOutputStream(fos);
+	
+			bytesRead = inBuffer.read(data, 0, data.length);
+		    bos.write(data, 0, bytesRead);
+		    
+		    bos.flush();
+			
+		    fos.close();
+			bos.close();
+			System.out.println(String.format("File saved in %s (%d bytes)", outFile, filesize));
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+		}
+    }
+    
+    static void receiveFileList(DataInputStream inBuffer)
+    {
+	    boolean gotList = false;
+		
+	    int bytesRead = 0;
+		try
+		{
+			int filesize = inBuffer.readInt();
+			
+			byte[] data = new byte[filesize];
+			bytesRead = inBuffer.read(data, 0, data.length);
+			if (bytesRead != filesize)
+			{
+				System.out.println("file list receive error");
+				return;
+			}
+			String text = new String(data, "UTF-8");
+		 	
+			System.out.print(text);
+		}
+		catch(Exception e)
+		{
+			System.out.println(e);
+		}
+    }
 } 

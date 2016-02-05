@@ -164,6 +164,11 @@ public class SelectServer {
 	                            	String outputStr = getFileList(".");
 	                            	int strLen = outputStr.length();
 	                            	
+	                            	ByteBuffer bufferSize = ByteBuffer.allocate(4);
+		                            bufferSize.putInt(strLen);
+		                            bufferSize.rewind();
+		                            cchannel.write(bufferSize);
+	                            	
 	                            	CharBuffer newcb = CharBuffer.allocate(strLen);
 	                            	ByteBuffer outBuf = ByteBuffer.allocate(strLen);
 
@@ -283,7 +288,7 @@ public class SelectServer {
 		    for (int i = 0; i < files.length; i++) 
 			{
 				if (files[i].isFile()) 
-					result += files[i].getName() + ' ';
+					result += files[i].getName() + '\n';
 		    }
 			result += '\n';
 		}
