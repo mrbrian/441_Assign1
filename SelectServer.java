@@ -192,8 +192,14 @@ public class SelectServer {
 		                                System.out.println(filename + " not found.");		                            
 		                            }
 		                            else
-		                            {
+		                            {       
+		                            	ByteBuffer bufferSize = ByteBuffer.allocate(8);
+			                            bufferSize.putLong(data.length);
+			                            bufferSize.rewind();
+			                            cchannel.write(bufferSize);
+		                            
 			                            ByteBuffer outBuf = ByteBuffer.allocate(data.length);
+			                            outBuf.put(data);
 			                            outBuf.flip();
 			                            cchannel.write(outBuf);
 		                            }
@@ -242,6 +248,27 @@ public class SelectServer {
             	closeChannel(key.channel());                
             }
         }
+    }
+
+    static byte[] getFile(String filename)
+    {
+    	byte[] result = null;
+	    
+    	try
+	    {	
+  		    File f = new File(filename);
+  
+  		    FileInputStream input = new FileInputStream(f);
+
+	    	int size = (int)f.length();
+		    result = new byte[size];
+
+		    input.read(result);
+	    }
+	    catch(IOException e) {
+            System.out.println(e);
+        }
+	    return result;
     }
     
     static String getFileList(String dir)
