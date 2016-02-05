@@ -9,11 +9,10 @@ import java.net.*;
 import java.nio.*;
 import java.nio.channels.*;
 import java.nio.charset.*;
-import java.nio.file.Paths;
 import java.util.*;
 
 public class SelectServer {
-    public static int BUFFERSIZE = 32;
+    public static int BUFFERSIZE = 256;
     public static void main(String args[]) throws Exception 
     {
         if (args.length != 1)
@@ -245,27 +244,6 @@ public class SelectServer {
         }
     }
     
-    static byte[] getFile(String filename)
-    {
-    	byte[] result = null;
-	    
-    	try
-	    {	
-  		    File f = new File(filename);
-  
-  		    FileInputStream input = new FileInputStream(f);
-
-	    	int size = (int)f.length();
-		    result = new byte[size];
-
-		    input.read(result);
-	    }
-	    catch(IOException e) {
-            System.out.println(e);
-        }
-	    return result;
-    }
-    
     static String getFileList(String dir)
     {
 	    String result = "";
@@ -278,7 +256,7 @@ public class SelectServer {
 		    for (int i = 0; i < files.length; i++) 
 			{
 				if (files[i].isFile()) 
-					result += files[i].getName() + '\n';
+					result += files[i].getName() + ' ';
 		    }
 			result += '\n';
 		}

@@ -41,7 +41,18 @@ class TCPClient {
         while (!line.equals("logout"))
         {
             // Send to the server
-            outBuffer.writeBytes(line + '\n'); 
+            outBuffer.writeBytes(line + "\n"); 
+            
+            // Getting response from the server
+            line = inBuffer.readLine();
+            
+			if(!line.equals("get") || !line.equals("list") || !line.equals("terminate") ||
+					!line.equals("logout")){
+						
+				System.out.println("Incorrect command: " + line);
+			}else{
+				System.out.println("Server: " + line);
+			}
 
         	if (line.equals("list"))
         	{
