@@ -51,7 +51,10 @@ class TCPClient {
         	}
         	else if (split[0].equals("get"))
         	{
-        		receiveFile(inData);    			
+        		String filename = split[1];
+        		int port = clientSocket.getLocalPort();
+        		String destfile = filename + "-" + port;
+        		receiveFile(inData, destfile);    			
         	}
         	else
         	{
@@ -68,16 +71,15 @@ class TCPClient {
         clientSocket.close();           
     } 
     
-    static void receiveFile(DataInputStream inBuffer)
+    static void receiveFile(DataInputStream inBuffer, String destfile)
     {
 		int bytesRead = 0;
-		String outFile = "downloadedfile";
 		try
 		{
 			long filesize = inBuffer.readLong();
 		
 			byte[] data = new byte[(int)filesize];
-			File content = new File(outFile);
+			File content = new File(destfile);
 			
 			FileOutputStream fos = new FileOutputStream(content);
 	        BufferedOutputStream bos = new BufferedOutputStream(fos);
@@ -89,7 +91,7 @@ class TCPClient {
 			
 		    fos.close();
 			bos.close();
-			System.out.println(String.format("File saved in %s (%d bytes)", outFile, filesize));
+			System.out.println("File saved in " + destfile + " (" + filesize + " bytes)");
 		}
 		catch(Exception e)
 		{
@@ -108,7 +110,7 @@ class TCPClient {
 			bytesRead = inBuffer.read(data, 0, data.length);
 			if (bytesRead != filesize)
 			{
-				System.out.println(String.format("receiveFileList: expected %d bytes, read %d bytes", filesize, bytesRead));
+				System.out.println("receiveFileList: expected " + filesize + " bytes, read " + bytesRead + " bytes");
 				return;
 			}
 			String text = new String(data, "UTF-8");
