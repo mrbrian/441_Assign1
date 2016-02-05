@@ -54,7 +54,7 @@ class TCPClient {
         		String filename = split[1];
         		int port = clientSocket.getLocalPort();
         		String destfile = filename + "-" + port;
-        		receiveFile(inData, destfile);    			
+        		receiveFile(inData, inBuffer, destfile);    			
         	}
         	else
         	{
@@ -71,20 +71,27 @@ class TCPClient {
         clientSocket.close();           
     } 
     
-    static void receiveFile(DataInputStream inBuffer, String destfile)
+    static void receiveFile(DataInputStream dataBuffer, BufferedReader inBuffer, String destfile)
     {
 		int bytesRead = 0;
 		try
 		{
-			long filesize = inBuffer.readLong();
+			long filesize = dataBuffer.readLong();
 		
+			if (filesize == -1)		// error
+			{
+	            String line = inBuffer.readLine();
+	            System.out.println("Server: " + line);
+				return;
+			}
+			
 			byte[] data = new byte[(int)filesize];
 			File content = new File(destfile);
 			
 			FileOutputStream fos = new FileOutputStream(content);
 	        BufferedOutputStream bos = new BufferedOutputStream(fos);
 	
-			bytesRead = inBuffer.read(data, 0, data.length);
+			bytesRead = dataBuffer.read(data, 0, data.length);
 		    bos.write(data, 0, bytesRead);
 		    
 		    bos.flush();

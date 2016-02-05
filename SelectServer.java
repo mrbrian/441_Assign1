@@ -161,14 +161,21 @@ public class SelectServer {
 		                            filename = filename.replaceAll("\\s+", "");			// trim whitespace
 		                            System.out.print("Open file: " + filename + "\n");
 
+	                            	ByteBuffer bufferSize = ByteBuffer.allocate(8);
 		                            byte[] data = getFile(filename);
-		                            if (data == null)
+		                            if (data == null)		// read error
 		                            {
-		                                System.out.println(filename + " not found.");		                            
+		                                System.out.println(filename + " not found.");
+
+			                            bufferSize.putLong(-1);
+			                            bufferSize.rewind();
+			                            cchannel.write(bufferSize);
+		                            
+		                                // send error message to client		                                
+		                                sendMessage("Error in opening file " + filename + "\n", cchannel, encoder);
 		                            }
 		                            else
 		                            {       
-		                            	ByteBuffer bufferSize = ByteBuffer.allocate(8);
 			                            bufferSize.putLong(data.length);
 			                            bufferSize.rewind();
 			                            cchannel.write(bufferSize);
@@ -249,6 +256,7 @@ public class SelectServer {
 	    }
 	    catch(IOException e) {
             System.out.println("open() failed");
+            result = null;
         }
 	    return result;
     }
@@ -335,5 +343,21 @@ public class SelectServer {
          }
         return null;
     }
-    
+        
+    static int sendMessage(String msg, 
+				    		SocketChannel cchannel, 
+				    		CharsetEncoder encoder) throws IOException
+    {
+    	int outLen = msg.length();
+    	CharBuffer newcb = CharBuffer.allocate(outLen);
+    	ByteBuffer outBuf = ByteBuffer.allocate(outLen);
+    	
+    	newcb.put(msg);
+    	newcb.rewind();
+    	encoder.encode(newcb, outBuf, false);
+    	outBuf.flip();
+        int bytesSent = cchannel.write(outBuf);
+        
+        return bytesSent;
+    }
 }
