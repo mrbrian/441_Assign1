@@ -45,11 +45,9 @@ public class SelectServer {
         tcp_channel.register(selector, SelectionKey.OP_ACCEPT);
 
         // Declare a UDP server socket and a datagram packet
-        DatagramChannel udp_channel = null;
-        
+        DatagramChannel udp_channel = null;        
         udp_channel = DatagramChannel.open();
-        InetSocketAddress udp_isa = new InetSocketAddress(Integer.parseInt(args[0]));
-        udp_channel.socket().bind(udp_isa);
+        udp_channel.socket().bind(isa);
         udp_channel.configureBlocking(false);
         udp_channel.register(selector, SelectionKey.OP_READ);
         
@@ -90,15 +88,15 @@ public class SelectServer {
                     else 
                     {
                     	SelectableChannel sc = key.channel();
-                    	if (sc instanceof DatagramChannel)		// is it UDP?
+                    	if (sc instanceof DatagramChannel)		// is this on the UDP channel?
                     	{
                         	DatagramChannel dc = (DatagramChannel)sc;
-                    		line = do_UDP(dc, key, inBuffer, cBuffer, decoder);		// process UDP
+                    		line = do_UDP(dc, key, inBuffer, cBuffer, decoder);		// then process UDP message
                     		
 							if (line == null)
 								continue;
 							
-                            if (line.equals("terminate"))
+                            if (line.equals("terminate"))		// check for terminate
                                 terminated = true;
                     	}
                     	else		// it's not UDP, must be TCP then
@@ -110,9 +108,9 @@ public class SelectServer {
 	                            inBuffer = ByteBuffer.allocateDirect(BUFFERSIZE);
 	                            cBuffer = CharBuffer.allocate(BUFFERSIZE);
 	                             
+	                            Thread.sleep(100);		
+
 	                            // Read from socket
-	                            Thread.sleep(100);
-	                            
 	                            bytesRecv = cchannel.read(inBuffer);
 	                            if (bytesRecv <= 0)
 	                            {
@@ -127,27 +125,20 @@ public class SelectServer {
 	                            line = cBuffer.toString();
 	                            System.out.print("TCP Client: " + line);
 
-                            	String[] strSplit = line.split(" ");
+                            	String[] strSplit = line.split(" ");	// split up commands
                             	
 	                            if (line.equals("list\n"))
 	                            {   
 	                            	String outputStr = getFileList(".");
 	                            	int strLen = outputStr.length();
 	                            	
-	                            	ByteBuffer bufferSize = ByteBuffer.allocate(4);
+	                            	ByteBuffer bufferSize = ByteBuffer.allocate(4);		// send the size of message
 		                            bufferSize.putInt(strLen);
 		                            bufferSize.rewind();
 		                            cchannel.write(bufferSize);
+
+	                            	bytesSent = sendMessage(outputStr, cchannel, encoder);	// send message to client
 	                            	
-	                            	CharBuffer newcb = CharBuffer.allocate(strLen);
-	                            	ByteBuffer outBuf = ByteBuffer.allocate(strLen);
-
-	                            	newcb.put(outputStr);
-	                            	newcb.rewind();
-	                            	encoder.encode(newcb, outBuf, false);
-	                            	outBuf.flip();
-		                            bytesSent = cchannel.write(outBuf); 
-
 		                            if (bytesSent != outputStr.length())
 		                            {
 		                                System.out.println("write() error, or connection closed");
@@ -163,27 +154,28 @@ public class SelectServer {
 
 	                            	ByteBuffer bufferSize = ByteBuffer.allocate(8);
 		                            byte[] data = getFile(filename);
-		                            if (data == null)		// read error
+		                            
+		                            if (data == null)		// error while reading file 
 		                            {
 		                                System.out.println(filename + " not found.");
 
-			                            bufferSize.putLong(-1);
+			                            bufferSize.putLong(-1);			// let client know the file read failed
 			                            bufferSize.rewind();
-			                            cchannel.write(bufferSize);
+			                            cchannel.write(bufferSize);		// send fail filesize
 		                            
 		                                // send error message to client		                                
 		                                sendMessage("Error in opening file " + filename + "\n", cchannel, encoder);
 		                            }
 		                            else
 		                            {       
-			                            bufferSize.putLong(data.length);
+			                            bufferSize.putLong(data.length);	 
 			                            bufferSize.rewind();
-			                            cchannel.write(bufferSize);
+			                            cchannel.write(bufferSize);		// send filesize to client
 		                            
 			                            ByteBuffer outBuf = ByteBuffer.allocate(data.length);
 			                            outBuf.put(data);
 			                            outBuf.flip();
-			                            cchannel.write(outBuf);
+			                            cchannel.write(outBuf);		// send file data to client
 		                            }
 	                            }
 	                            else if (line.equals("terminate\n"))
@@ -192,17 +184,10 @@ public class SelectServer {
 	                            }
 	                            else
 	                            {
-	                            	line = line.replaceAll("\\s+", "");			// trim whitespace
-	                            	String outStr = "Unknown command: " + line + "\n";
+	                            	line = line.replaceAll("\\s+", "");						// trim whitespace
+	                            	String outStr = "Unknown command: " + line + "\n";		// build error string
 	                            	int outLen = outStr.length();
-	                            	CharBuffer newcb = CharBuffer.allocate(outLen);
-	                            	ByteBuffer outBuf = ByteBuffer.allocate(outLen);
-	                            	
-	                            	newcb.put(outStr);
-	                            	newcb.rewind();
-	                            	encoder.encode(newcb, outBuf, false);
-	                            	outBuf.flip();
-		                            bytesSent = cchannel.write(outBuf); 
+	                            	bytesSent = sendMessage(outStr, cchannel, encoder);		// send error to client
 		                            
 		                            if (bytesSent != outLen)
 		                            {
@@ -239,6 +224,7 @@ public class SelectServer {
         }
     }
 
+    // getFile - returns byte array containing the contents of some file 
     static byte[] getFile(String filename)
     {
     	byte[] result = null;
@@ -251,7 +237,7 @@ public class SelectServer {
 	    	int size = (int)f.length();
 		    result = new byte[size];
 
-		    input.read(result);
+		    input.read(result);		// read bytes from file
 		    input.close();
 	    }
 	    catch(IOException e) {
@@ -261,6 +247,7 @@ public class SelectServer {
 	    return result;
     }
     
+    // getFileList - scans a path and returns string of contents
     static String getFileList(String dir)
     {
 	    String result = "";
@@ -273,7 +260,7 @@ public class SelectServer {
 		    for (int i = 0; i < files.length; i++) 
 			{
 				if (files[i].isFile()) 
-					result += files[i].getName() + '\n';
+					result += files[i].getName() + '\n';	// build file list 
 		    }
 		}
         catch (IOException e) {
@@ -282,16 +269,17 @@ public class SelectServer {
 		return result;
     }    
     
+    // closeChannel - closes the given SelectableChannel (either UDP or TCP)
     static void closeChannel(SelectableChannel channel)
     {
     	try
     	{
-    		if (channel instanceof ServerSocketChannel)
+    		if (channel instanceof ServerSocketChannel)		// check is it TCP
     		{
     			ServerSocketChannel tcpChannel = (ServerSocketChannel)channel;
 	        	tcpChannel.socket().close();
     		}
-    		else if (channel instanceof DatagramChannel)
+    		else if (channel instanceof DatagramChannel)	// check if its UDP
     		{
 	        	DatagramChannel udpChannel = (DatagramChannel)channel;
             	udpChannel.socket().close();
@@ -302,6 +290,7 @@ public class SelectServer {
     	}
     }
     
+    // do_UDP - processes an incoming UDP packet
     static String do_UDP(DatagramChannel dc, 
 			    		SelectionKey key, 
 			    		ByteBuffer inBuffer, 
@@ -328,7 +317,7 @@ public class SelectServer {
             cBuffer.flip();
             String line = cBuffer.toString();
             int bytesRecv = line.length();
-            System.out.print("UDP Client: " + line + "\n");
+            System.out.print("UDP Client: " + line + "\n");		// print udp message
    	                          
             // Echo the message back
             inBuffer.flip();
@@ -343,20 +332,21 @@ public class SelectServer {
          }
         return null;
     }
-        
+     
+    // sendMessage - sends string to client through TCP socketchannel
     static int sendMessage(String msg, 
 				    		SocketChannel cchannel, 
 				    		CharsetEncoder encoder) throws IOException
     {
     	int outLen = msg.length();
-    	CharBuffer newcb = CharBuffer.allocate(outLen);
+    	CharBuffer newcb = CharBuffer.allocate(outLen);		// allocate required space
     	ByteBuffer outBuf = ByteBuffer.allocate(outLen);
     	
     	newcb.put(msg);
     	newcb.rewind();
     	encoder.encode(newcb, outBuf, false);
     	outBuf.flip();
-        int bytesSent = cchannel.write(outBuf);
+        int bytesSent = cchannel.write(outBuf);		// send to client
         
         return bytesSent;
     }

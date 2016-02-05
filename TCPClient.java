@@ -45,16 +45,18 @@ class TCPClient {
             // Send to the server
             outBuffer.writeBytes(line + "\n"); 
 
+			// List command detection
         	if (split[0].equals("list"))
         	{
-        		receiveFileList(inData);
+        		receiveFileList(inData); //receive file list
         	}
+			//Get command detection
         	else if (split[0].equals("get"))
         	{
-        		String filename = split[1];
-        		int port = clientSocket.getLocalPort();
-        		String destfile = filename + "-" + port;
-        		receiveFile(inData, inBuffer, destfile);    			
+        		String filename = split[1];	//parse filename from input
+        		int port = clientSocket.getLocalPort(); //get client port
+        		String destfile = filename + "-" + port; //concatenate new filename
+        		receiveFile(inData, inBuffer, destfile); //getFile    			
         	}
         	else
         	{
@@ -71,34 +73,35 @@ class TCPClient {
         clientSocket.close();           
     } 
     
+	// helper function to 
     static void receiveFile(DataInputStream dataBuffer, BufferedReader inBuffer, String destfile)
     {
 		int bytesRead = 0;
 		try
 		{
-			long filesize = dataBuffer.readLong();
+			long filesize = dataBuffer.readLong(); // get file size
 		
-			if (filesize == -1)		// error
+			if (filesize == -1)		// file error
 			{
 	            String line = inBuffer.readLine();
 	            System.out.println("Server: " + line);
 				return;
 			}
 			
-			byte[] data = new byte[(int)filesize];
-			File content = new File(destfile);
+			byte[] data = new byte[(int)filesize]; //byte conversion of filesize
+			File content = new File(destfile); //destincation file generation
 			
-			FileOutputStream fos = new FileOutputStream(content);
-	        BufferedOutputStream bos = new BufferedOutputStream(fos);
+			FileOutputStream fos = new FileOutputStream(content); //new FileOutputStream
+	        BufferedOutputStream bos = new BufferedOutputStream(fos); //new BufferedOutputStream
 	
-			bytesRead = dataBuffer.read(data, 0, data.length);
-		    bos.write(data, 0, bytesRead);
+			bytesRead = dataBuffer.read(data, 0, data.length); //read all bytes from dataBuffer
+		    bos.write(data, 0, bytesRead); //write bytes to the BufferedOutputStream
 		    
-		    bos.flush();
+		    bos.flush(); //flush BufferedOutputStream
 			
-		    fos.close();
-			bos.close();
-			System.out.println("File saved in " + destfile + " (" + filesize + " bytes)");
+		    fos.close(); //close FileOutputStream
+			bos.close(); //close BufferedOutputStream
+			System.out.println("File saved in " + destfile + " (" + filesize + " bytes)"); //print
 		}
 		catch(Exception e)
 		{
@@ -106,23 +109,24 @@ class TCPClient {
 		}
     }
     
+	//helper function to receive and display file list
     static void receiveFileList(DataInputStream inBuffer)
     {
 	    int bytesRead = 0;
 		try
 		{
-			int filesize = inBuffer.readInt();
+			int filesize = inBuffer.readInt(); //read file size
 			
-			byte[] data = new byte[filesize];
-			bytesRead = inBuffer.read(data, 0, data.length);
-			if (bytesRead != filesize)
+			byte[] data = new byte[filesize]; //initialize data to byte format
+			bytesRead = inBuffer.read(data, 0, data.length); //get read byte size for error checking
+			if (bytesRead != filesize) //read error
 			{
 				System.out.println("receiveFileList: expected " + filesize + " bytes, read " + bytesRead + " bytes");
 				return;
 			}
-			String text = new String(data, "UTF-8");
+			String text = new String(data, "UTF-8"); //conversion of byte data to String
 		 	
-			System.out.print(text);
+			System.out.print(text); //display file list
 		}
 		catch(Exception e)
 		{
