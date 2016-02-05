@@ -160,7 +160,7 @@ public class SelectServer {
 	                            else if (strSplit[0].equals("get"))
 	                            {
 		                            String filename = strSplit[1];
-		                            filename = filename.replaceAll("\\s+", "");
+		                            filename = filename.replaceAll("\\s+", "");			// trim whitespace
 		                            System.out.print(String.format("Open file: %s\n", filename));
 
 		                            byte[] data = getFile(filename);
@@ -187,17 +187,24 @@ public class SelectServer {
 	                            }
 	                            else
 	                            {
-		                            // Echo the message back
-		                            inBuffer.flip();
-		                            bytesSent = cchannel.write(inBuffer); 
-		                            if (bytesSent != bytesRecv)
+	                            	line = line.replaceAll("\\s+", "");			// trim whitespace
+	                            	String outStr = String.format("Unknown command: %s\n", line);
+	                            	int outLen = outStr.length();
+	                            	CharBuffer newcb = CharBuffer.allocate(outLen);
+	                            	ByteBuffer outBuf = ByteBuffer.allocate(outLen);
+	                            	
+	                            	newcb.put(outStr);
+	                            	newcb.rewind();
+	                            	encoder.encode(newcb, outBuf, false);
+	                            	outBuf.flip();
+		                            bytesSent = cchannel.write(outBuf); 
+		                            
+		                            if (bytesSent != outLen)
 		                            {
 		                                System.out.println("write() error, or connection closed");
 		                                key.cancel();  // deregister the socket
 		                                continue;
 		                            }
-		                            if (line.equals("terminate\n"))
-		                                terminated = true;
 	                            }
                         	}
                     	}
