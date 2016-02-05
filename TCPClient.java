@@ -27,7 +27,7 @@ class TCPClient {
           new DataOutputStream(clientSocket.getOutputStream()); 
         BufferedReader inBuffer = 
           new BufferedReader(new
-          InputStreamReader(clientSocket.getInputStream())); 
+          InputStreamReader(clientSocket.getInputStream()));
 
         // Initialize user input stream
         String line; 
@@ -41,11 +41,19 @@ class TCPClient {
         while (!line.equals("logout"))
         {
             // Send to the server
-            outBuffer.writeBytes(line); 
+            outBuffer.writeBytes(line + "\n"); 
             
             // Getting response from the server
             line = inBuffer.readLine();
-            System.out.println("Server: " + line);
+            
+			if(!line.equals("get") || !line.equals("list") || !line.equals("terminate") ||
+					!line.equals("logout")){
+						
+				System.out.println("Incorrect command: " + line);
+			}else{
+				System.out.println("Server: " + line);
+			}
+
              
             System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
             line = inFromUser.readLine(); 
