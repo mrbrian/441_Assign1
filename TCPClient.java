@@ -52,22 +52,22 @@ class TCPClient {
 			{
 	            // Send to the server
 	            outBuffer.writeBytes(line + "\n"); 
-			}
 
-        	if (split[0].equals("list"))
-        	{
-        		receiveFileList(inData);
-        	}
-        	else if (split[0].equals("get"))
-        	{
-        		receiveFile(inData);    			
-        	}
-        	else
-        	{
-	            // Getting response from the server
-	            line = inBuffer.readLine();
-	            System.out.println("Server: " + line);
-        	}    
+	        	if (split[0].equals("list"))
+	        	{
+	        		receiveFileList(inData);
+	        	}
+	        	else if (split[0].equals("get"))
+	        	{
+	        		receiveFile(inData);    			
+	        	}
+	        	else
+	        	{
+		            // Getting response from the server
+		            line = inBuffer.readLine();
+		            System.out.println("Server: " + line);
+	        	}    
+			}
         	
             System.out.print("Please enter a message to be sent to the server ('logout' to terminate): ");
             line = inFromUser.readLine(); 
